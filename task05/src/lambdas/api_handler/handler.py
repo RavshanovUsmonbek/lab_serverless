@@ -3,12 +3,9 @@ from commons.abstract_lambda import AbstractLambda
 import boto3
 from datetime import datetime
 import uuid
+import os
 
 _LOG = get_logger('ApiHandler-handler')
-
-dynamodb = boto3.resource('dynamodb')
-table_name = 'cmtr-5c54baa5-Events'
-table = dynamodb.Table(table_name)
 
 class ApiHandler(AbstractLambda):
 
@@ -18,7 +15,11 @@ class ApiHandler(AbstractLambda):
     def handle_request(self, event, context):
         """
         Explain incoming event here
-        """
+        """        
+        dynamodb = boto3.resource('dynamodb')
+        table_name = os.environ['table_name']
+        table = dynamodb.Table(table_name)
+        
         # Extract principalId and content from the request
         principal_id = event['principalId']
         content = event['content']
