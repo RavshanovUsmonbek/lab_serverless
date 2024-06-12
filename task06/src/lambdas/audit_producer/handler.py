@@ -32,7 +32,7 @@ class AuditProducer(AbstractLambda):
     def handle_insert(self, record):
         new_image = record['dynamodb']['NewImage']
         key = new_image['key']['S']
-        value = new_image['value']['S']
+        value = int(new_image['value']['N'])
         
         audit_item = {
             'id': str(uuid.uuid4()),
@@ -50,8 +50,8 @@ class AuditProducer(AbstractLambda):
         new_image = record['dynamodb']['NewImage']
         old_image = record['dynamodb']['OldImage']
         key = new_image['key']['S']
-        new_value = new_image['value']['S']
-        old_value = old_image['value']['S']
+        new_value = int(new_image['value']['N'])
+        old_value = int(old_image['value']['N'])
         
         audit_item = {
             'id': str(uuid.uuid4()),
