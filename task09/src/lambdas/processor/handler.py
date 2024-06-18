@@ -30,7 +30,23 @@ class Processor(AbstractLambda):
         forecast = data = json.loads(response.text, parse_float=Decimal)
         data = {
             'id': str(uuid.uuid4()),  # Generate a unique UUID
-            'forecast': forecast
+            "forecast": {
+                "elevation": forecast['elevation'],
+                "generationtime_ms": forecast['generationtime_ms'],
+                "hourly": {
+                    "temperature_2m": forecast['hourly']['temperature_2m'],
+                    "time": forecast['hourly']['time']
+                },
+                "hourly_units": {
+                    "temperature_2m": forecast['hourly_units']['temperature_2m'],
+                    "time": forecast['hourly_units']['time']
+                },
+                "latitude": forecast['latitude'],
+                "longitude": forecast['longitude'],
+                "timezone": forecast['timezone'],
+                "timezone_abbreviation": forecast['timezone_abbreviation'],
+                "utc_offset_seconds": forecast['utc_offset_seconds']
+            }
         }
         try:
             # Put the item into the table
