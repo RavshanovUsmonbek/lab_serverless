@@ -34,7 +34,6 @@ class ApiHandler(AbstractLambda):
             "statusCode": 200,
             "body": json.dumps(data)
         }
-        return response
     
 
 HANDLER = ApiHandler()
