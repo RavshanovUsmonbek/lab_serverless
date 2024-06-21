@@ -34,13 +34,14 @@ class SignUpModel(BaseModel):
     firstName: str
     lastName: str
     email: EmailStr
-    password: constr(min_length=12, regex=r'^[a-zA-Z0-9$%^*]+$')
+    password: str
 
     @validator('password')
     def password_complexity(cls, value):
         import re
-        if not re.match(r'^[a-zA-Z0-9$%^*]+$', value):
-            raise ValueError('Password must be alphanumeric and can include only "$%^*".')
+        if not re.match(r'^[a-zA-Z0-9$%^*-_]+$', value):
+            raise ValueError('Password must be alphanumeric and can include only "$%^*_-".')
+        
         return value
     
 
@@ -163,7 +164,6 @@ class ApiHandler(AbstractLambda):
             payload = json.loads(event['body'])
             body = SignUpModel(**payload)
         except ValidationError as e:
-            _LOG.error('-------------------------------')
             _LOG.error(f"ERROR On validation: {payload}")
             return {
                 'statusCode': 400,
