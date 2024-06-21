@@ -3,13 +3,13 @@ import json
 import boto3
 import uuid
 from datetime import datetime
-from time import sleep
 import re
 from commons.log_helper import get_logger
 from commons.abstract_lambda import AbstractLambda
 from pydantic import ValidationError, BaseModel, EmailStr, constr, validator
 from typing import Optional
 from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr
 
 
 _LOG = get_logger('ApiHandler-handler')
@@ -294,11 +294,14 @@ class ApiHandler(AbstractLambda):
         print('---------------------------PAYLOAD-')
         print(body.dict())
         try:
-            table_response = tables_table.get_item(
-                Key={'tableNumber': body.tableNumber}
+            print('---------------------------')
+            print("BEFORE querying TABLES table")
+            response = tables_table.scan(
+                FilterExpression=Attr('number').eq(body.tableNumber)
             )
-            if 'Item' not in table_response:
-                return ValueError("Table doesn't exist")
+            print(response)
+            if not response.get('Items'):
+                return Exception("Table doesn't exist")
             
             # Check if the reservation times are valid
             # date = datetime.strptime(body.date, '%Y-%m-%d').date()
@@ -307,12 +310,12 @@ class ApiHandler(AbstractLambda):
             slot_end = datetime.strptime(body.slotTimeEnd, '%H:%M').time()
 
             if slot_start >= slot_end:
-                raise ValueError("The start time must be before the end time.")
+                raise Exception("The start time must be before the end time.")
         
             print("BEFORE QUERYING DB")
             # Query existing reservations for the same table and date
-            response = reservations_table.query(
-                KeyConditionExpression=Key('tableNumber').eq(body.tableNumber) & Key('date').eq(body.date)
+            response = reservations_table.scan(
+                FilterExpression=Attr('tableNumber').eq(body.tableNumber) & Attr('date').eq(body.date)
             )
             
             reservations = response.get('Items', [])
@@ -324,7 +327,7 @@ class ApiHandler(AbstractLambda):
                 existing_end = datetime.strptime(reservation['slotTimeEnd'], '%H:%M').time()
 
                 if (slot_start < existing_end or slot_end > existing_start):
-                    raise ValueError("The reservation time overlaps with an existing reservation.")
+                    raise Exception("The reservation time overlaps with an existing reservation.")
 
 
             reservation_id = str(uuid.uuid4())
@@ -337,9 +340,10 @@ class ApiHandler(AbstractLambda):
                 'body': json.dumps({'reservationId': reservation_id})
             }
         except Exception as e:
+            _LOG.error(str(e))
             return {
                 'statusCode': 400,
-                'body': json.dumps({'error': str(e)})
+                'body': json.dumps({'error': "error happened"})
             }
 
     def get_reservations(self, event):
