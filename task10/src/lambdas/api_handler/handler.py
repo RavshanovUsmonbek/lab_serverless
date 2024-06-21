@@ -301,7 +301,7 @@ class ApiHandler(AbstractLambda):
             )
             print(response)
             if not response.get('Items'):
-                return Exception("Table doesn't exist")
+                raise Exception("Table doesn't exist")
             
             # Check if the reservation times are valid
             # date = datetime.strptime(body.date, '%Y-%m-%d').date()
@@ -340,10 +340,9 @@ class ApiHandler(AbstractLambda):
                 'body': json.dumps({'reservationId': reservation_id})
             }
         except Exception as e:
-            _LOG.error(str(e))
             return {
                 'statusCode': 400,
-                'body': json.dumps({'error': "error happened"})
+                'body': json.dumps({'error': str(e)})
             }
 
     def get_reservations(self, event):
