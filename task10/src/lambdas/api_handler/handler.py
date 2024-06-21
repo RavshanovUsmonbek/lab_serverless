@@ -2,13 +2,14 @@ import os
 import json
 import boto3
 import uuid
+from datetime import datetime
 from time import sleep
 import re
 from commons.log_helper import get_logger
 from commons.abstract_lambda import AbstractLambda
 from pydantic import ValidationError, BaseModel, EmailStr, constr, validator
 from typing import Optional
-from functools import wraps
+from boto3.dynamodb.conditions import Key
 
 
 _LOG = get_logger('ApiHandler-handler')
@@ -289,12 +290,41 @@ class ApiHandler(AbstractLambda):
                 'statusCode': 400,
                 'body': e.json()
             }
-
-        reservation_id = str(uuid.uuid4())
-        item = body.dict()
-        item['id'] = reservation_id
-
         try:
+            table_response = tables_table.get_item(
+                Key={'tableNumber': body.tableNumber}
+            )
+            if 'Item' not in table_response:
+                return ValueError("Table doesn't exist")
+            
+            # Check if the reservation times are valid
+            date = datetime.strptime(body.date, '%Y-%m-%d').date()
+            slot_start = datetime.strptime(body.slotTimeStart, '%H:%M').time()
+            slot_end = datetime.strptime(body.slotTimeEnd, '%H:%M').time()
+
+            if slot_start >= slot_end:
+                raise ValueError("The start time must be before the end time.")
+        
+            # Query existing reservations for the same table and date
+            response = reservations_table.query(
+                KeyConditionExpression=Key('tableNumber').eq(body.tableNumber) & Key('date').eq(body.date)
+            )
+            
+            reservations = response.get('Items', [])
+
+            # Check for time conflicts
+            for reservation in reservations:
+                existing_start = datetime.strptime(reservation['slotTimeStart'], '%H:%M').time()
+                existing_end = datetime.strptime(reservation['slotTimeEnd'], '%H:%M').time()
+
+                if (slot_start < existing_end or slot_end > existing_start):
+                    raise ValueError("The reservation time overlaps with an existing reservation.")
+
+
+            reservation_id = str(uuid.uuid4())
+            item = body.dict()
+            item['id'] = reservation_id
+
             reservations_table.put_item(Item=item)
             return {
                 'statusCode': 200,
