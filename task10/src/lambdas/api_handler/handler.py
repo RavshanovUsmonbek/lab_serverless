@@ -160,8 +160,11 @@ class ApiHandler(AbstractLambda):
     def signup(self, event):
         self._pool_id, self._client_id = UserPoolData(cognito).get_data()
         try:
-            body = SignUpModel(**json.loads(event['body']))
+            payload = json.loads(event['body'])
+            body = SignUpModel(**payload)
         except ValidationError as e:
+            _LOG.error('-------------------------------')
+            _LOG.error(f"ERROR On validation: {payload}")
             return {
                 'statusCode': 400,
                 'body': e.json()
