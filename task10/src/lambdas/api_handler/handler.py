@@ -47,12 +47,12 @@ class SignUpModel(BaseModel):
 
 class SigninModel(BaseModel):
     email: EmailStr
-    password: constr(min_length=12, regex=r'^[a-zA-Z0-9$%^*]+$')
+    password: str
 
     @validator('password')
     def password_complexity(cls, value):
         import re
-        if not re.match(r'^[a-zA-Z0-9$%^*]+$', value):
+        if not re.match(r'^[a-zA-Z0-9$%^*-_]+$', value):
             raise ValueError('Password must be alphanumeric and can include only "$%^*".')
         return value
 
