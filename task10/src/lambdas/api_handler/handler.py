@@ -292,7 +292,7 @@ class ApiHandler(AbstractLambda):
             }
             
         print('---------------------------PAYLOAD-')
-        print(body)
+        print(body.dict())
         try:
             table_response = tables_table.get_item(
                 Key={'tableNumber': body.tableNumber}
@@ -301,13 +301,15 @@ class ApiHandler(AbstractLambda):
                 return ValueError("Table doesn't exist")
             
             # Check if the reservation times are valid
-            date = datetime.strptime(body.date, '%Y-%m-%d').date()
+            # date = datetime.strptime(body.date, '%Y-%m-%d').date()
+            print("BEFORE converting date")
             slot_start = datetime.strptime(body.slotTimeStart, '%H:%M').time()
             slot_end = datetime.strptime(body.slotTimeEnd, '%H:%M').time()
 
             if slot_start >= slot_end:
                 raise ValueError("The start time must be before the end time.")
         
+            print("BEFORE QUERYING DB")
             # Query existing reservations for the same table and date
             response = reservations_table.query(
                 KeyConditionExpression=Key('tableNumber').eq(body.tableNumber) & Key('date').eq(body.date)
@@ -315,6 +317,7 @@ class ApiHandler(AbstractLambda):
             
             reservations = response.get('Items', [])
 
+            print("BEFORE OVERLAP CHECK")
             # Check for time conflicts
             for reservation in reservations:
                 existing_start = datetime.strptime(reservation['slotTimeStart'], '%H:%M').time()
