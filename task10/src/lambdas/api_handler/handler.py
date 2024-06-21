@@ -290,6 +290,9 @@ class ApiHandler(AbstractLambda):
                 'statusCode': 400,
                 'body': e.json()
             }
+            
+        print('---------------------------PAYLOAD-')
+        print(body)
         try:
             table_response = tables_table.get_item(
                 Key={'tableNumber': body.tableNumber}
